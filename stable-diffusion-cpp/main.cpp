@@ -43,6 +43,10 @@ static void print_usage(const char* prog) {
         "  -H, --height <int>           Image height (default: 512)\n"
         "  --steps <int>                Sampling steps (default: 20)\n"
         "  --cfg-scale <float>          CFG scale (default: 7.0)\n"
+        "  --sampling-method <name>     Sampler (euler, euler_a, lcm, dpm++2m, etc.) (default: auto)\n"
+        "  --scheduler <name>           Scheduler (discrete, karras, lcm, etc.) (default: auto)\n"
+        "  --vae-on-cpu                 Keep VAE on CPU (saves VRAM)\n"
+        "  --clip-on-cpu                Keep CLIP on CPU (saves VRAM)\n"
         "  --seed <int>                 RNG seed (default: 42, -1 for random)\n"
         "  --threads <int>              Thread count (default: auto)\n"
         "  -o, --output <path>          Output file (default: output.png)\n"
@@ -67,6 +71,10 @@ int main(int argc, char* argv[]) {
     float cfg_scale = 7.0f;
     int64_t seed    = 42;
     int n_threads   = -1;
+    sample_method_t sample_method = SAMPLE_METHOD_COUNT;   // COUNT = auto-detect
+    scheduler_t     scheduler     = SCHEDULER_COUNT;       // COUNT = auto-detect
+    bool vae_on_cpu  = false;
+    bool clip_on_cpu = false;
 
     // Parse args
     for (int i = 1; i < argc; i++) {
@@ -91,6 +99,16 @@ int main(int argc, char* argv[]) {
         else if (arg == "-H" || arg == "--height")          height               = std::stoi(next());
         else if (arg == "--steps")                          steps                = std::stoi(next());
         else if (arg == "--cfg-scale")                      cfg_scale            = std::stof(next());
+        else if (arg == "--sampling-method") {
+            sample_method = str_to_sample_method(next());
+            if (sample_method == SAMPLE_METHOD_COUNT) { fprintf(stderr, "error: invalid sampling method\n"); return 1; }
+        }
+        else if (arg == "--scheduler") {
+            scheduler = str_to_scheduler(next());
+            if (scheduler == SCHEDULER_COUNT) { fprintf(stderr, "error: invalid scheduler\n"); return 1; }
+        }
+        else if (arg == "--vae-on-cpu")                      vae_on_cpu           = true;
+        else if (arg == "--clip-on-cpu")                     clip_on_cpu          = true;
         else if (arg == "--seed")                           seed                 = std::stoll(next());
         else if (arg == "--threads" || arg == "-t")         n_threads            = std::stoi(next());
         else if (arg == "-o" || arg == "--output")          output_path          = next();
@@ -126,6 +144,8 @@ int main(int argc, char* argv[]) {
     ctx_params.n_threads            = n_threads;
     ctx_params.vae_decode_only      = true;
     ctx_params.free_params_immediately = true;
+    ctx_params.keep_vae_on_cpu      = vae_on_cpu;
+    ctx_params.keep_clip_on_cpu     = clip_on_cpu;
 
     sd_ctx_t* ctx = new_sd_ctx(&ctx_params);
     if (!ctx) {
@@ -145,9 +165,17 @@ int main(int argc, char* argv[]) {
     gen_params.sample_params.sample_steps       = steps;
     gen_params.sample_params.guidance.txt_cfg   = cfg_scale;
 
-    // Use model defaults for sampler/scheduler
-    gen_params.sample_params.sample_method = sd_get_default_sample_method(ctx);
-    gen_params.sample_params.scheduler     = sd_get_default_scheduler(ctx, gen_params.sample_params.sample_method);
+    // Use explicit sampler/scheduler if given, otherwise auto-detect from model
+    if (sample_method != SAMPLE_METHOD_COUNT) {
+        gen_params.sample_params.sample_method = sample_method;
+    } else {
+        gen_params.sample_params.sample_method = sd_get_default_sample_method(ctx);
+    }
+    if (scheduler != SCHEDULER_COUNT) {
+        gen_params.sample_params.scheduler = scheduler;
+    } else {
+        gen_params.sample_params.scheduler = sd_get_default_scheduler(ctx, gen_params.sample_params.sample_method);
+    }
 
     fprintf(stderr, "prompt:    \"%s\"\n", prompt.c_str());
     fprintf(stderr, "size:      %dx%d\n", width, height);
