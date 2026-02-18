@@ -1,0 +1,1 @@
+A list of experiments for either testing, prototyping, or learning various frameworks and technologies.  Each direct sub folder is the name of the test being worked on  (e.g. exp/stable-diffusion-cpp contains tests for stable diffusion ML in that folder).

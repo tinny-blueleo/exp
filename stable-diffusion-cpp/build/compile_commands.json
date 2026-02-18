@@ -1,0 +1,206 @@
+[
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build",
+  "command": "/usr/bin/c++ -DGGML_USE_CPU -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/thirdparty -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/include -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/thirdparty/. -O3 -DNDEBUG -o CMakeFiles/sd-experiment.dir/main.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/main.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/main.cpp",
+  "output": "CMakeFiles/sd-experiment.dir/main.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp",
+  "command": "/usr/bin/c++ -DGGML_MAX_NAME=128 -DGGML_USE_CPU -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/include -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/thirdparty -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/thirdparty/. -O3 -DNDEBUG -o CMakeFiles/stable-diffusion.dir/src/model.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/src/model.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/src/model.cpp",
+  "output": "stable-diffusion.cpp/CMakeFiles/stable-diffusion.dir/src/model.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp",
+  "command": "/usr/bin/c++ -DGGML_MAX_NAME=128 -DGGML_USE_CPU -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/include -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/thirdparty -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/thirdparty/. -O3 -DNDEBUG -o CMakeFiles/stable-diffusion.dir/src/name_conversion.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/src/name_conversion.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/src/name_conversion.cpp",
+  "output": "stable-diffusion.cpp/CMakeFiles/stable-diffusion.dir/src/name_conversion.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp",
+  "command": "/usr/bin/c++ -DGGML_MAX_NAME=128 -DGGML_USE_CPU -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/include -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/thirdparty -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/thirdparty/. -O3 -DNDEBUG -o CMakeFiles/stable-diffusion.dir/src/stable-diffusion.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/src/stable-diffusion.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/src/stable-diffusion.cpp",
+  "output": "stable-diffusion.cpp/CMakeFiles/stable-diffusion.dir/src/stable-diffusion.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp",
+  "command": "/usr/bin/c++ -DGGML_MAX_NAME=128 -DGGML_USE_CPU -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/include -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/thirdparty -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/thirdparty/. -O3 -DNDEBUG -o CMakeFiles/stable-diffusion.dir/src/tokenize_util.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/src/tokenize_util.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/src/tokenize_util.cpp",
+  "output": "stable-diffusion.cpp/CMakeFiles/stable-diffusion.dir/src/tokenize_util.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp",
+  "command": "/usr/bin/c++ -DGGML_MAX_NAME=128 -DGGML_USE_CPU -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/include -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/thirdparty -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/thirdparty/. -O3 -DNDEBUG -o CMakeFiles/stable-diffusion.dir/src/upscaler.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/src/upscaler.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/src/upscaler.cpp",
+  "output": "stable-diffusion.cpp/CMakeFiles/stable-diffusion.dir/src/upscaler.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp",
+  "command": "/usr/bin/c++ -DGGML_MAX_NAME=128 -DGGML_USE_CPU -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/include -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/thirdparty -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/thirdparty/. -O3 -DNDEBUG -o CMakeFiles/stable-diffusion.dir/src/util.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/src/util.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/src/util.cpp",
+  "output": "stable-diffusion.cpp/CMakeFiles/stable-diffusion.dir/src/util.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp",
+  "command": "/usr/bin/c++ -DGGML_MAX_NAME=128 -DGGML_USE_CPU -DSDCPP_BUILD_COMMIT=636d3cb -DSDCPP_BUILD_VERSION=master-504-636d3cb -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/include -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/thirdparty -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/thirdparty/. -O3 -DNDEBUG -o CMakeFiles/stable-diffusion.dir/src/version.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/src/version.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/src/version.cpp",
+  "output": "stable-diffusion.cpp/CMakeFiles/stable-diffusion.dir/src/version.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp",
+  "command": "/usr/bin/c++ -DGGML_MAX_NAME=128 -DGGML_USE_CPU -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/include -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/thirdparty -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/thirdparty/. -O3 -DNDEBUG -o CMakeFiles/stable-diffusion.dir/src/vocab/vocab.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/src/vocab/vocab.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/src/vocab/vocab.cpp",
+  "output": "stable-diffusion.cpp/CMakeFiles/stable-diffusion.dir/src/vocab/vocab.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/cc -DGGML_COMMIT=\\\"a8db410a\\\" -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_VERSION=\\\"0.9.5\\\" -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu11 -Wshadow -Wstrict-prototypes -Wpointer-arith -Wmissing-prototypes -Werror=implicit-int -Werror=implicit-function-declaration -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wdouble-promotion -o CMakeFiles/ggml-base.dir/ggml.c.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml.c",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml.c",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml-base.dir/ggml.c.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/c++ -DGGML_COMMIT=\\\"a8db410a\\\" -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_VERSION=\\\"0.9.5\\\" -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -o CMakeFiles/ggml-base.dir/ggml.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml.cpp",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml-base.dir/ggml.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/cc -DGGML_COMMIT=\\\"a8db410a\\\" -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_VERSION=\\\"0.9.5\\\" -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu11 -Wshadow -Wstrict-prototypes -Wpointer-arith -Wmissing-prototypes -Werror=implicit-int -Werror=implicit-function-declaration -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wdouble-promotion -o CMakeFiles/ggml-base.dir/ggml-alloc.c.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-alloc.c",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-alloc.c",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml-base.dir/ggml-alloc.c.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/c++ -DGGML_COMMIT=\\\"a8db410a\\\" -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_VERSION=\\\"0.9.5\\\" -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -o CMakeFiles/ggml-base.dir/ggml-backend.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-backend.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-backend.cpp",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml-base.dir/ggml-backend.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/c++ -DGGML_COMMIT=\\\"a8db410a\\\" -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_VERSION=\\\"0.9.5\\\" -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -o CMakeFiles/ggml-base.dir/ggml-opt.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-opt.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-opt.cpp",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml-base.dir/ggml-opt.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/c++ -DGGML_COMMIT=\\\"a8db410a\\\" -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_VERSION=\\\"0.9.5\\\" -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -o CMakeFiles/ggml-base.dir/ggml-threading.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-threading.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-threading.cpp",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml-base.dir/ggml-threading.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/cc -DGGML_COMMIT=\\\"a8db410a\\\" -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_VERSION=\\\"0.9.5\\\" -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu11 -Wshadow -Wstrict-prototypes -Wpointer-arith -Wmissing-prototypes -Werror=implicit-int -Werror=implicit-function-declaration -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wdouble-promotion -o CMakeFiles/ggml-base.dir/ggml-quants.c.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-quants.c",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-quants.c",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml-base.dir/ggml-quants.c.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/c++ -DGGML_COMMIT=\\\"a8db410a\\\" -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_VERSION=\\\"0.9.5\\\" -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -o CMakeFiles/ggml-base.dir/gguf.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/gguf.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/gguf.cpp",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml-base.dir/gguf.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/cc -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_USE_CPU_REPACK -DGGML_USE_OPENMP -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/.. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu11 -Wshadow -Wstrict-prototypes -Wpointer-arith -Wmissing-prototypes -Werror=implicit-int -Werror=implicit-function-declaration -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wdouble-promotion -march=native -fopenmp -o CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.c.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/ggml-cpu.c",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/ggml-cpu.c",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.c.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/c++ -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_USE_CPU_REPACK -DGGML_USE_OPENMP -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/.. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -march=native -fopenmp -o CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/ggml-cpu.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/ggml-cpu.cpp",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/c++ -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_USE_CPU_REPACK -DGGML_USE_OPENMP -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/.. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -march=native -fopenmp -o CMakeFiles/ggml-cpu.dir/ggml-cpu/repack.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/repack.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/repack.cpp",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/repack.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/c++ -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_USE_CPU_REPACK -DGGML_USE_OPENMP -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/.. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -march=native -fopenmp -o CMakeFiles/ggml-cpu.dir/ggml-cpu/hbm.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/hbm.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/hbm.cpp",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/hbm.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/cc -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_USE_CPU_REPACK -DGGML_USE_OPENMP -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/.. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu11 -Wshadow -Wstrict-prototypes -Wpointer-arith -Wmissing-prototypes -Werror=implicit-int -Werror=implicit-function-declaration -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wdouble-promotion -march=native -fopenmp -o CMakeFiles/ggml-cpu.dir/ggml-cpu/quants.c.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/quants.c",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/quants.c",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/quants.c.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/c++ -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_USE_CPU_REPACK -DGGML_USE_OPENMP -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/.. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -march=native -fopenmp -o CMakeFiles/ggml-cpu.dir/ggml-cpu/traits.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/traits.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/traits.cpp",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/traits.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/c++ -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_USE_CPU_REPACK -DGGML_USE_OPENMP -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/.. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -march=native -fopenmp -o CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/amx.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/amx/amx.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/amx/amx.cpp",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/amx.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/c++ -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_USE_CPU_REPACK -DGGML_USE_OPENMP -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/.. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -march=native -fopenmp -o CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/mmq.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/amx/mmq.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/amx/mmq.cpp",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/mmq.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/c++ -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_USE_CPU_REPACK -DGGML_USE_OPENMP -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/.. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -march=native -fopenmp -o CMakeFiles/ggml-cpu.dir/ggml-cpu/binary-ops.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/binary-ops.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/binary-ops.cpp",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/binary-ops.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/c++ -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_USE_CPU_REPACK -DGGML_USE_OPENMP -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/.. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -march=native -fopenmp -o CMakeFiles/ggml-cpu.dir/ggml-cpu/unary-ops.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/unary-ops.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/unary-ops.cpp",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/unary-ops.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/c++ -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_USE_CPU_REPACK -DGGML_USE_OPENMP -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/.. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -march=native -fopenmp -o CMakeFiles/ggml-cpu.dir/ggml-cpu/vec.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/vec.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/vec.cpp",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/vec.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/c++ -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_USE_CPU_REPACK -DGGML_USE_OPENMP -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/.. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -march=native -fopenmp -o CMakeFiles/ggml-cpu.dir/ggml-cpu/ops.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/ops.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/ops.cpp",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ops.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/cc -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_USE_CPU_REPACK -DGGML_USE_OPENMP -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/.. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu11 -Wshadow -Wstrict-prototypes -Wpointer-arith -Wmissing-prototypes -Werror=implicit-int -Werror=implicit-function-declaration -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wdouble-promotion -march=native -fopenmp -o CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/quants.c.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/arch/x86/quants.c",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/arch/x86/quants.c",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/quants.c.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/c++ -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_USE_CPU_REPACK -DGGML_USE_OPENMP -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/.. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/. -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -march=native -fopenmp -o CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/repack.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/arch/x86/repack.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-cpu/arch/x86/repack.cpp",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/repack.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/c++ -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_USE_CPU -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -o CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-backend-dl.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-backend-dl.cpp",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/ggml/src",
+  "command": "/usr/bin/c++ -DGGML_MAX_NAME=128 -DGGML_SCHED_MAX_COPIES=4 -DGGML_USE_CPU -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -o CMakeFiles/ggml.dir/ggml-backend-reg.cpp.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-backend-reg.cpp",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/ggml/src/ggml-backend-reg.cpp",
+  "output": "stable-diffusion.cpp/ggml/src/CMakeFiles/ggml.dir/ggml-backend-reg.cpp.o"
+},
+{
+  "directory": "/home/leo/code/exp/stable-diffusion-cpp/build/stable-diffusion.cpp/thirdparty",
+  "command": "/usr/bin/cc -DGGML_MAX_NAME=128 -I/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/thirdparty/. -O3 -DNDEBUG -o CMakeFiles/zip.dir/zip.c.o -c /home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/thirdparty/zip.c",
+  "file": "/home/leo/code/exp/stable-diffusion-cpp/stable-diffusion.cpp/thirdparty/zip.c",
+  "output": "stable-diffusion.cpp/thirdparty/CMakeFiles/zip.dir/zip.c.o"
+}
+]
