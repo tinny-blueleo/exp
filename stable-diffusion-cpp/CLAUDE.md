@@ -89,8 +89,7 @@ Current model: [LCM Dreamshaper v7](https://huggingface.co/Steward/lcm-dreamshap
 
 ```bash
 mkdir -p models
-wget -O models/LCM_Dreamshaper_v7-f16.gguf \
-    "https://huggingface.co/Steward/lcm-dreamshaper-v7-gguf/resolve/main/LCM_Dreamshaper_v7-f16.gguf"
+wget -O models/LCM_Dreamshaper_v7-f16.gguf "https://huggingface.co/Steward/lcm-dreamshaper-v7-gguf/resolve/main/LCM_Dreamshaper_v7-f16.gguf"
 ```
 
 ## Usage
@@ -115,7 +114,9 @@ Binary is at `./build/sd-experiment`.
 | `--cfg-scale <float>` | | CFG guidance scale | `7.0` |
 | `--sampling-method <name>` | | Sampler algorithm | auto |
 | `--scheduler <name>` | | Noise scheduler | auto |
-| `--vae-on-cpu` | | Keep VAE on CPU (saves VRAM) | off |
+| `--vae-tiling` | | Process VAE in tiles (recommended for low VRAM) | off |
+| `--vae-conv-direct` | | Use direct convolution for VAE (may be faster) | off |
+| `--vae-on-cpu` | | Keep VAE on CPU (saves VRAM, very slow) | off |
 | `--clip-on-cpu` | | Keep CLIP on CPU (saves VRAM) | off |
 | `--seed <int>` | | RNG seed (-1 for random) | `42` |
 | `--threads <int>` | `-t` | Thread count | auto |
@@ -131,10 +132,10 @@ Binary is at `./build/sd-experiment`.
 
 ### Examples
 
-**LCM Dreamshaper v7 on GTX 1050 Ti (4GB VRAM) — requires `--vae-on-cpu`:**
+**LCM Dreamshaper v7 on GTX 1050 Ti (4GB VRAM) — use `--vae-tiling`:**
 
 ```bash
-./build/sd-experiment -m models/LCM_Dreamshaper_v7-f16.gguf -p "Taj Mahal in space" --sampling-method lcm --cfg-scale 1.0 --steps 4 --vae-on-cpu -o output.png
+./build/sd-experiment -m models/LCM_Dreamshaper_v7-f16.gguf -p "Taj Mahal in space" --sampling-method lcm --cfg-scale 1.0 --steps 4 --vae-tiling -o output.png
 ```
 
 **Standard SD 1.5 model (20 steps):**
@@ -151,15 +152,45 @@ Binary is at `./build/sd-experiment`.
 
 ## VRAM Management (GTX 1050 Ti / 4GB)
 
-The f16 model uses ~1970MB VRAM for weights alone. The VAE decode buffer needs an additional ~1664MB, which exceeds 4GB total. Solutions:
+The f16 model uses ~1970MB VRAM for weights. Without tiling, the VAE decode buffer needs ~1664MB additional VRAM, which exceeds 4GB total and causes OOM.
 
-- **`--vae-on-cpu`** (recommended): Runs VAE decode on CPU. Sampling stays on GPU (~5s for 4 LCM steps), VAE decode is slower (~96s on CPU) but avoids OOM. This is required for f16 models on 4GB cards.
-- **`--clip-on-cpu`**: Moves CLIP text encoder (~235MB) to RAM. Frees VRAM for larger models.
-- Both flags can be combined for maximum VRAM savings.
-- Using quantized models (Q4_0, Q5_0) reduces weight VRAM and may allow VAE to stay on GPU.
+| Strategy | VAE decode time | Total time (4 LCM steps) | Notes |
+|----------|----------------|--------------------------|-------|
+| **`--vae-tiling`** | ~10s | **~15s** | Recommended. Tiles VAE into 9 chunks at ~416MB each on GPU |
+| `--vae-on-cpu` | ~96s | ~101s | Fallback. Entire VAE runs on CPU |
+| No flag | OOM crash | - | VAE needs 1664MB contiguous VRAM |
+
+- **`--vae-tiling`** (recommended): Splits VAE decode into 32x32 tiles with 50% overlap, each needing only ~416MB VRAM. Stays on GPU. ~10x faster than CPU.
+- **`--vae-on-cpu`**: Fallback if tiling still OOMs (e.g. larger images). Very slow.
+- **`--clip-on-cpu`**: Moves CLIP (~235MB) to RAM. Combine with above for maximum VRAM savings.
+
+## Why is Python/diffusers faster?
+
+Python with PyTorch diffusers can run the same model in <5s total because:
+
+1. **PyTorch uses fp16 compute throughout** — including the VAE. This halves the VAE compute buffer (~832MB vs 1664MB), often fitting in VRAM without tiling.
+2. **cuDNN convolution kernels** — PyTorch delegates to NVIDIA's cuDNN library which has highly optimized conv2d implementations. stable-diffusion.cpp uses ggml's own CUDA kernels.
+3. **Lazy memory allocation** — PyTorch's CUDA allocator reuses memory between layers and doesn't need to pre-allocate the entire compute graph. ggml allocates the full buffer upfront.
+4. **torch.compile / CUDA graphs** — Recent diffusers versions can fuse operations and reduce kernel launch overhead.
+
+## Can we match Python/diffusers speed?
+
+### fp16 VAE compute — not possible yet
+
+ggml hardcodes `GGML_TYPE_F32` as the output type for `ggml_mul_mat()` (in `ggml.c:3184`). Even though model weights are stored in fp16, all intermediate computation runs in fp32, doubling the VRAM needed for compute buffers compared to PyTorch. Fixing this would require changes to ggml core.
+
+### cuDNN — not integrated
+
+ggml uses its own custom CUDA kernels (e.g. `ggml-cuda/conv2d.cu`) rather than NVIDIA's cuDNN library. There are no cmake options to enable cuDNN. This is a major reason PyTorch's conv2d is faster.
+
+### What we can do
+
+- **`--vae-conv-direct`**: Uses direct convolution for VAE. Uses ~60% less VRAM per tile (176MB vs 416MB) but is **~15x slower on GPU** (170s vs 11s). Only useful for extreme memory constraints on CPU; avoid with CUDA.
+- **`SD_FAST_SOFTMAX=ON`**: ~1.5x faster softmax on CUDA, but non-deterministic (same seed can produce different images).
+- **Self-quantize to q8_0/q5_1**: Reduces model VRAM footprint, potentially avoiding tiling entirely. Use stable-diffusion.cpp's convert mode.
 
 ## Notes
 
-- `SD_FAST_SOFTMAX=ON` gives ~1.5x faster softmax on CUDA but makes results non-deterministic (same seed can produce different images).
 - LCM models need `--sampling-method lcm`, `--cfg-scale 1.0`, and `--steps 4` (range 1-8).
 - Sampling on GPU takes ~5s for 4 LCM steps at 512x512 on the GTX 1050 Ti.
+- No quantized GGUF versions of LCM Dreamshaper v7 exist yet ([only f16 available](https://huggingface.co/Steward/lcm-dreamshaper-v7-gguf)). You can self-quantize using stable-diffusion.cpp's convert mode.
