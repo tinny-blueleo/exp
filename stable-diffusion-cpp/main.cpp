@@ -45,7 +45,9 @@ static void print_usage(const char* prog) {
         "  --cfg-scale <float>          CFG scale (default: 7.0)\n"
         "  --sampling-method <name>     Sampler (euler, euler_a, lcm, dpm++2m, etc.) (default: auto)\n"
         "  --scheduler <name>           Scheduler (discrete, karras, lcm, etc.) (default: auto)\n"
-        "  --vae-on-cpu                 Keep VAE on CPU (saves VRAM)\n"
+        "  --vae-tiling                 Process VAE in tiles (saves VRAM, keeps GPU speed)\n"
+        "  --vae-conv-direct            Use direct convolution for VAE (may be faster)\n"
+        "  --vae-on-cpu                 Keep VAE on CPU (saves VRAM, slow decode)\n"
         "  --clip-on-cpu                Keep CLIP on CPU (saves VRAM)\n"
         "  --seed <int>                 RNG seed (default: 42, -1 for random)\n"
         "  --threads <int>              Thread count (default: auto)\n"
@@ -73,8 +75,10 @@ int main(int argc, char* argv[]) {
     int n_threads   = -1;
     sample_method_t sample_method = SAMPLE_METHOD_COUNT;   // COUNT = auto-detect
     scheduler_t     scheduler     = SCHEDULER_COUNT;       // COUNT = auto-detect
-    bool vae_on_cpu  = false;
-    bool clip_on_cpu = false;
+    bool vae_tiling    = false;
+    bool vae_on_cpu    = false;
+    bool clip_on_cpu   = false;
+    bool vae_conv_direct = false;
 
     // Parse args
     for (int i = 1; i < argc; i++) {
@@ -107,6 +111,8 @@ int main(int argc, char* argv[]) {
             scheduler = str_to_scheduler(next());
             if (scheduler == SCHEDULER_COUNT) { fprintf(stderr, "error: invalid scheduler\n"); return 1; }
         }
+        else if (arg == "--vae-tiling")                       vae_tiling           = true;
+        else if (arg == "--vae-conv-direct")                 vae_conv_direct      = true;
         else if (arg == "--vae-on-cpu")                      vae_on_cpu           = true;
         else if (arg == "--clip-on-cpu")                     clip_on_cpu          = true;
         else if (arg == "--seed")                           seed                 = std::stoll(next());
@@ -146,6 +152,7 @@ int main(int argc, char* argv[]) {
     ctx_params.free_params_immediately = true;
     ctx_params.keep_vae_on_cpu      = vae_on_cpu;
     ctx_params.keep_clip_on_cpu     = clip_on_cpu;
+    ctx_params.vae_conv_direct      = vae_conv_direct;
 
     sd_ctx_t* ctx = new_sd_ctx(&ctx_params);
     if (!ctx) {
@@ -164,6 +171,12 @@ int main(int argc, char* argv[]) {
     gen_params.batch_count     = 1;
     gen_params.sample_params.sample_steps       = steps;
     gen_params.sample_params.guidance.txt_cfg   = cfg_scale;
+    if (vae_tiling) {
+        gen_params.vae_tiling_params.enabled        = true;
+        gen_params.vae_tiling_params.tile_size_x    = 32;
+        gen_params.vae_tiling_params.tile_size_y    = 32;
+        gen_params.vae_tiling_params.target_overlap  = 0.5f;
+    }
 
     // Use explicit sampler/scheduler if given, otherwise auto-detect from model
     if (sample_method != SAMPLE_METHOD_COUNT) {
