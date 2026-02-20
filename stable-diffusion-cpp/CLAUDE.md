@@ -31,7 +31,7 @@ stable-diffusion-cpp/
 | **Metal** (macOS) | Xcode CLI tools | `-DSD_METAL=ON` |
 | **OpenCL** | `ocl-icd-opencl-dev` | `-DSD_OPENCL=ON` |
 
-On this machine (NVIDIA GTX 1050 Ti, 4GB VRAM):
+On this machine (NVIDIA RTX 3050 Laptop GPU, 4GB VRAM, compute capability 8.6):
 
 ```bash
 sudo apt install nvidia-cuda-toolkit
@@ -132,10 +132,10 @@ Binary is at `./build/sd-experiment`.
 
 ### Examples
 
-**LCM Dreamshaper v7 on GTX 1050 Ti (4GB VRAM) — use `--vae-tiling`:**
+**LCM Dreamshaper v7 on RTX 3050 Laptop (4GB VRAM):**
 
 ```bash
-./build/sd-experiment -m models/LCM_Dreamshaper_v7-f16.gguf -p "Taj Mahal in space" --sampling-method lcm --cfg-scale 1.0 --steps 4 --vae-tiling -o output.png
+./build/sd-experiment -m models/LCM_Dreamshaper_v7-f16.gguf -p "Taj Mahal in space" --sampling-method lcm --cfg-scale 1.0 --steps 4 -o output.png
 ```
 
 **Standard SD 1.5 model (20 steps):**
@@ -150,18 +150,19 @@ Binary is at `./build/sd-experiment`.
 ./build/sd-experiment --diffusion-model unet.safetensors --clip_l clip_l.safetensors --t5xxl t5xxl_fp16.safetensors --vae vae.safetensors -p "prompt"
 ```
 
-## VRAM Management (GTX 1050 Ti / 4GB)
+## VRAM Management (RTX 3050 Laptop / 4GB)
 
-The f16 model uses ~1970MB VRAM for weights. Without tiling, the VAE decode buffer needs ~1664MB additional VRAM, which exceeds 4GB total and causes OOM.
+The f16 model uses ~1970MB VRAM for weights. The VAE decode buffer needs ~1664MB additional VRAM (~3634MB total), which fits within the RTX 3050's 4GB VRAM without tiling.
 
 | Strategy | VAE decode time | Total time (4 LCM steps) | Notes |
 |----------|----------------|--------------------------|-------|
-| **`--vae-tiling`** | ~10s | **~15s** | Recommended. Tiles VAE into 9 chunks at ~416MB each on GPU |
+| **No flag** | ~1.1s | **~2.5s** | Default. Full VAE decode on GPU, fits in 4GB |
+| `--vae-tiling` | ~10s | ~15s | Unnecessary on RTX 3050. Slows down due to tiling overhead |
 | `--vae-on-cpu` | ~96s | ~101s | Fallback. Entire VAE runs on CPU |
-| No flag | OOM crash | - | VAE needs 1664MB contiguous VRAM |
 
-- **`--vae-tiling`** (recommended): Splits VAE decode into 32x32 tiles with 50% overlap, each needing only ~416MB VRAM. Stays on GPU. ~10x faster than CPU.
-- **`--vae-on-cpu`**: Fallback if tiling still OOMs (e.g. larger images). Very slow.
+- **No flag** (recommended on RTX 3050): The full 1664MB VAE buffer fits in VRAM alongside model weights. ~2.5s total.
+- **`--vae-tiling`**: Splits VAE decode into 32x32 tiles with 50% overlap, each needing only ~416MB VRAM. Only needed for GPUs where total VRAM < ~3.7GB or for larger image resolutions.
+- **`--vae-on-cpu`**: Fallback if GPU OOMs (e.g. larger images). Very slow.
 - **`--clip-on-cpu`**: Moves CLIP (~235MB) to RAM. Combine with above for maximum VRAM savings.
 
 ## Why is Python/diffusers faster?
@@ -192,5 +193,5 @@ ggml uses its own custom CUDA kernels (e.g. `ggml-cuda/conv2d.cu`) rather than N
 ## Notes
 
 - LCM models need `--sampling-method lcm`, `--cfg-scale 1.0`, and `--steps 4` (range 1-8).
-- Sampling on GPU takes ~5s for 4 LCM steps at 512x512 on the GTX 1050 Ti.
+- Sampling on GPU takes ~1.35s for 4 LCM steps at 512x512 on the RTX 3050 Laptop. Total generation time is ~2.5s.
 - No quantized GGUF versions of LCM Dreamshaper v7 exist yet ([only f16 available](https://huggingface.co/Steward/lcm-dreamshaper-v7-gguf)). You can self-quantize using stable-diffusion.cpp's convert mode.
