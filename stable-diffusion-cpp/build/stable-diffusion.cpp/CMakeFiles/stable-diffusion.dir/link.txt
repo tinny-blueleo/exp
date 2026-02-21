@@ -1,2 +1,0 @@
-/usr/bin/ar qc libstable-diffusion.a "CMakeFiles/stable-diffusion.dir/src/model.cpp.o" "CMakeFiles/stable-diffusion.dir/src/name_conversion.cpp.o" "CMakeFiles/stable-diffusion.dir/src/stable-diffusion.cpp.o" "CMakeFiles/stable-diffusion.dir/src/tokenize_util.cpp.o" "CMakeFiles/stable-diffusion.dir/src/upscaler.cpp.o" "CMakeFiles/stable-diffusion.dir/src/util.cpp.o" "CMakeFiles/stable-diffusion.dir/src/version.cpp.o" "CMakeFiles/stable-diffusion.dir/src/vocab/vocab.cpp.o" thirdparty/CMakeFiles/zip.dir/zip.c.o
-/usr/bin/ranlib libstable-diffusion.a

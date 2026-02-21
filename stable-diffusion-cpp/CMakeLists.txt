@@ -16,3 +16,13 @@ target_compile_features(sd-experiment PRIVATE cxx_std_17)
 
 # stb headers live in the submodule's thirdparty dir
 target_include_directories(sd-experiment PRIVATE stable-diffusion.cpp/thirdparty)
+
+# Profiling binary
+add_executable(sd-profile profile_main.cpp)
+target_link_libraries(sd-profile PRIVATE stable-diffusion)
+target_compile_features(sd-profile PRIVATE cxx_std_17)
+target_include_directories(sd-profile PRIVATE stable-diffusion.cpp/thirdparty)
+if(SD_CUDA)
+    find_package(CUDAToolkit REQUIRED)
+    target_link_libraries(sd-profile PRIVATE CUDA::cudart)
+endif()
