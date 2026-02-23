@@ -4,10 +4,12 @@ Pure C++ text-to-image inference using NVIDIA TensorRT. Generates 512x512 images
 
 ## Architecture
 
-Three-phase pipeline, each using a separate TensorRT FP16 engine:
-1. **CLIP Text Encoder** — tokenize prompt → embeddings [1, 77, 768]
-2. **UNet Diffusion** — 4 LCM denoising steps on latent space [1, 4, 64, 64]
-3. **VAE Decoder** — decode latents to RGB image [1, 3, 512, 512]
+Three-phase pipeline, each using a separate TensorRT engine:
+1. **CLIP Text Encoder** (FP32) — tokenize prompt → embeddings [1, 77, 768]
+2. **UNet Diffusion** (FP16) — 4 LCM denoising steps on latent space [1, 4, 64, 64]
+3. **VAE Decoder** (FP16) — decode latents to RGB image [1, 3, 512, 512]
+
+Text encoder uses FP32 because FP16 clips embedding values and degrades image quality.
 
 Target: RTX 3050 Laptop (4GB VRAM). If all engines don't fit in VRAM simultaneously, the pipeline automatically switches to sequential loading/unloading.
 
@@ -17,8 +19,8 @@ Target: RTX 3050 Laptop (4GB VRAM). If all engines don't fit in VRAM simultaneou
 # TensorRT (provides NvInfer.h, libnvinfer, libnvonnxparsers)
 sudo apt install tensorrt-dev tensorrt-libs
 
-# Python deps (for one-time ONNX export only)
-# Uses ../python-ml/venv which already has diffusers, torch, transformers
+# Python deps (for one-time ONNX download + engine build only)
+# Uses ../python-ml/venv which already has diffusers, torch, huggingface_hub
 ```
 
 ## Setup & Run
@@ -30,8 +32,8 @@ wget -O data/bpe_simple_vocab_16e6.txt \
   "https://github.com/openai/CLIP/raw/main/clip/bpe_simple_vocab_16e6.txt.gz" \
   && gunzip data/bpe_simple_vocab_16e6.txt.gz
 
-# 2. Export ONNX models (one-time, uses python-ml venv)
-../python-ml/venv/bin/python scripts/export_onnx.py --output-dir models/
+# 2. Download ONNX models from HuggingFace (one-time)
+../python-ml/venv/bin/python scripts/download_onnx.py --output-dir models/
 
 # 3. Build TensorRT engines (one-time, ~5-10 min)
 ../python-ml/venv/bin/python scripts/build_engines.py --onnx-dir models/ --engine-dir engines/
@@ -57,8 +59,8 @@ cmake --build build -j$(nproc)
 
 ## Key Files
 
-- `scripts/export_onnx.py` — PyTorch → ONNX export (one-time)
-- `scripts/build_engines.py` — ONNX → TensorRT engine build (one-time)
+- `scripts/download_onnx.py` — Download ONNX models from HuggingFace (one-time)
+- `scripts/build_engines.py` — ONNX → TensorRT engine compilation (one-time)
 - `src/engine.h/cpp` — TensorRT engine wrapper (load, infer, memory management)
 - `src/tokenizer.h/cpp` — CLIP BPE tokenizer (pure C++)
 - `src/scheduler.h/cpp` — LCM noise scheduler (pure C++)

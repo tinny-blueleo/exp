@@ -79,6 +79,7 @@ void TrtEngine::unload() {
 
 bool TrtEngine::allocate_buffers() {
     int num_io = engine_->getNbIOTensors();
+    int num_profiles = engine_->getNbOptimizationProfiles();
 
     // Count inputs/outputs first so we can reserve and avoid reallocation
     int num_inputs = 0, num_outputs = 0;
@@ -97,15 +98,44 @@ bool TrtEngine::allocate_buffers() {
         nvinfer1::DataType dtype = engine_->getTensorDataType(name);
         auto mode = engine_->getTensorIOMode(name);
 
-        size_t bytes = volume(dims) * dtype_size(dtype);
+        // Check if any dimension is dynamic (-1)
+        bool is_dynamic = false;
+        for (int d = 0; d < dims.nbDims; d++) {
+            if (dims.d[d] == -1) {
+                is_dynamic = true;
+                break;
+            }
+        }
+
+        // For allocation, use the max profile shape for dynamic tensors
+        nvinfer1::Dims alloc_dims = dims;
+        if (is_dynamic && num_profiles > 0) {
+            if (mode == nvinfer1::TensorIOMode::kINPUT) {
+                alloc_dims = engine_->getProfileShape(name, 0,
+                    nvinfer1::OptProfileSelector::kMAX);
+            } else {
+                // For dynamic outputs, use reasonable upper bounds
+                alloc_dims = dims;
+                for (int d = 0; d < alloc_dims.nbDims; d++) {
+                    if (alloc_dims.d[d] == -1) {
+                        if (d == 0) alloc_dims.d[d] = 1;
+                        else if (d == 1 && alloc_dims.nbDims == 4) alloc_dims.d[d] = 4;
+                        else if (alloc_dims.nbDims == 4) alloc_dims.d[d] = 512;
+                        else alloc_dims.d[d] = 768;
+                    }
+                }
+            }
+        }
+
+        size_t bytes = volume(alloc_dims) * dtype_size(dtype);
 
         BufferInfo info;
         info.name = name;
-        info.dims = dims;
+        info.dims = alloc_dims;
         info.dtype = dtype;
         info.byte_size = bytes;
+        info.is_dynamic = is_dynamic;
 
-        // Allocate GPU memory
         if (cudaMalloc(&info.device_ptr, bytes) != cudaSuccess) {
             std::cerr << "Failed to allocate GPU memory for " << name << " ("
                       << bytes << " bytes)" << std::endl;
@@ -113,8 +143,15 @@ bool TrtEngine::allocate_buffers() {
         }
         cudaMemset(info.device_ptr, 0, bytes);
 
-        // Set tensor address in context
         context_->setTensorAddress(name, info.device_ptr);
+
+        // For dynamic inputs, set the shape to the opt profile shape
+        if (is_dynamic && mode == nvinfer1::TensorIOMode::kINPUT && num_profiles > 0) {
+            nvinfer1::Dims opt_dims = engine_->getProfileShape(name, 0,
+                nvinfer1::OptProfileSelector::kOPT);
+            context_->setInputShape(name, opt_dims);
+            info.dims = opt_dims;
+        }
 
         if (mode == nvinfer1::TensorIOMode::kINPUT) {
             inputs_.push_back(info);
@@ -146,6 +183,17 @@ void TrtEngine::free_buffers() {
     inputs_.clear();
     outputs_.clear();
     buffer_map_.clear();
+}
+
+bool TrtEngine::set_input_shape(const std::string& name,
+                                 const nvinfer1::Dims& dims) {
+    auto it = buffer_map_.find(name);
+    if (it == buffer_map_.end()) {
+        std::cerr << "Input tensor not found: " << name << std::endl;
+        return false;
+    }
+    it->second->dims = dims;
+    return context_->setInputShape(name.c_str(), dims);
 }
 
 bool TrtEngine::set_input(const std::string& name, const void* host_data,

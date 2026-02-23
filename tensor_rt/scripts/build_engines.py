@@ -1,76 +1,40 @@
 #!/usr/bin/env python3
-"""Build TensorRT engines from ONNX models.
+"""Build TensorRT engines from HuggingFace ONNX models.
 
-Converts exported ONNX files into optimized TensorRT FP16 engines.
-Uses fixed shapes (batch=1, 512x512) to minimize VRAM during build.
+Compiles ONNX files (downloaded via download_onnx.py) into optimized TensorRT
+engines. Text encoder is built in FP32 (FP16 clips embedding values), UNet and
+VAE are built in FP16.
 
 Usage:
     python scripts/build_engines.py [--onnx-dir models/] [--engine-dir engines/]
-
-Alternatively, use trtexec directly:
-    trtexec --onnx=models/text_encoder.onnx --saveEngine=engines/text_encoder.trt --fp16
 """
 
 import argparse
 import os
-import subprocess
 import sys
 import time
 
-
-def build_with_trtexec(onnx_path, engine_path, extra_args=None):
-    """Build a TensorRT engine using trtexec CLI."""
-    cmd = [
-        "trtexec",
-        f"--onnx={onnx_path}",
-        f"--saveEngine={engine_path}",
-        "--fp16",
-        "--memPoolSize=workspace:1024MiB",
-    ]
-    if extra_args:
-        cmd.extend(extra_args)
-
-    print(f"  Running: {' '.join(cmd)}")
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        print(f"  STDERR: {result.stderr[-2000:]}")
-        raise RuntimeError(f"trtexec failed for {onnx_path}")
-    return True
+# Fixed optimization profiles for batch=1, 512x512 (64x64 latents).
+PROFILES = {
+    "text_encoder": {
+        "input_ids": ((1, 77), (1, 77), (1, 77)),
+    },
+    "unet": {
+        "sample": ((1, 4, 64, 64), (1, 4, 64, 64), (1, 4, 64, 64)),
+        "timestep": ((1,), (1,), (1,)),
+        "encoder_hidden_states": ((1, 77, 768), (1, 77, 768), (1, 77, 768)),
+        "timestep_cond": ((1, 256), (1, 256), (1, 256)),
+    },
+    "vae_decoder": {
+        "latent_sample": ((1, 4, 64, 64), (1, 4, 64, 64), (1, 4, 64, 64)),
+    },
+}
 
 
-def build_with_python_api(onnx_path, engine_path):
-    """Build a TensorRT engine using the Python API."""
+def build_engine(name, onnx_dir, engine_dir):
     import tensorrt as trt
 
-    logger = trt.Logger(trt.Logger.WARNING)
-    builder = trt.Builder(logger)
-    network = builder.create_network(
-        1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH)
-    )
-    parser = trt.OnnxParser(network, logger)
-
-    print(f"  Parsing ONNX: {onnx_path}")
-    onnx_abs = os.path.abspath(onnx_path)
-    if not parser.parse_from_file(onnx_abs):
-        for i in range(parser.num_errors):
-            print(f"    Error: {parser.get_error(i)}")
-        raise RuntimeError(f"Failed to parse {onnx_path}")
-
-    config = builder.create_builder_config()
-    config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, 1 << 30)  # 1GB
-    config.set_flag(trt.BuilderFlag.FP16)
-
-    print(f"  Building engine (this may take several minutes)...")
-    engine_bytes = builder.build_serialized_network(network, config)
-    if engine_bytes is None:
-        raise RuntimeError(f"Failed to build engine for {onnx_path}")
-
-    with open(engine_path, "wb") as f:
-        f.write(engine_bytes)
-
-
-def build_engine(name, onnx_dir, engine_dir, use_trtexec):
-    onnx_path = os.path.join(onnx_dir, f"{name}.onnx")
+    onnx_path = os.path.join(onnx_dir, name, "model.onnx")
     engine_path = os.path.join(engine_dir, f"{name}.trt")
 
     if not os.path.exists(onnx_path):
@@ -84,10 +48,46 @@ def build_engine(name, onnx_dir, engine_dir, use_trtexec):
     print(f"\nBuilding {name} engine...")
     start = time.time()
 
-    if use_trtexec:
-        build_with_trtexec(onnx_path, engine_path)
-    else:
-        build_with_python_api(onnx_path, engine_path)
+    logger = trt.Logger(trt.Logger.WARNING)
+    builder = trt.Builder(logger)
+    network = builder.create_network(
+        1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH)
+    )
+    parser = trt.OnnxParser(network, logger)
+
+    print(f"  Parsing ONNX: {onnx_path}")
+    if not parser.parse_from_file(os.path.abspath(onnx_path)):
+        for i in range(parser.num_errors):
+            print(f"    Error: {parser.get_error(i)}")
+        raise RuntimeError(f"Failed to parse {onnx_path}")
+
+    config = builder.create_builder_config()
+    config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, 1 << 30)
+
+    # Text encoder must stay FP32 — FP16 clips embedding values and degrades quality
+    if name != "text_encoder":
+        config.set_flag(trt.BuilderFlag.FP16)
+
+    # Add optimization profile for dynamic shapes
+    if name in PROFILES:
+        profile = builder.create_optimization_profile()
+        for input_name, (min_s, opt_s, max_s) in PROFILES[name].items():
+            found = any(
+                network.get_input(i).name == input_name
+                for i in range(network.num_inputs)
+            )
+            if found:
+                profile.set_shape(input_name, min_s, opt_s, max_s)
+                print(f"    {input_name}: {opt_s}")
+        config.add_optimization_profile(profile)
+
+    print(f"  Building engine (this may take several minutes)...")
+    engine_bytes = builder.build_serialized_network(network, config)
+    if engine_bytes is None:
+        raise RuntimeError(f"Failed to build engine for {onnx_path}")
+
+    with open(engine_path, "wb") as f:
+        f.write(engine_bytes)
 
     elapsed = time.time() - start
     size = os.path.getsize(engine_path)
@@ -98,44 +98,24 @@ def build_engine(name, onnx_dir, engine_dir, use_trtexec):
 def main():
     parser = argparse.ArgumentParser(description="Build TensorRT engines from ONNX")
     parser.add_argument("--onnx-dir", default="models", help="ONNX model directory")
-    parser.add_argument(
-        "--engine-dir", default="engines", help="Output engine directory"
-    )
-    parser.add_argument(
-        "--trtexec",
-        action="store_true",
-        help="Use trtexec CLI instead of Python API",
-    )
+    parser.add_argument("--engine-dir", default="engines", help="Output engine directory")
     args = parser.parse_args()
 
     os.makedirs(args.engine_dir, exist_ok=True)
 
-    # Determine build method
-    use_trtexec = args.trtexec
-    if not use_trtexec:
-        try:
-            import tensorrt
-
-            print(f"Using TensorRT Python API (version {tensorrt.__version__})")
-        except ImportError:
-            print("TensorRT Python package not found, falling back to trtexec")
-            use_trtexec = True
-
-    if use_trtexec:
-        if subprocess.run(["which", "trtexec"], capture_output=True).returncode != 0:
-            print("ERROR: trtexec not found. Install tensorrt-dev or tensorrt-libs.")
-            sys.exit(1)
-        print("Using trtexec CLI")
+    try:
+        import tensorrt
+        print(f"Using TensorRT Python API (version {tensorrt.__version__})")
+    except ImportError:
+        print("ERROR: TensorRT Python package not found.")
+        print("Install with: pip install tensorrt")
+        sys.exit(1)
 
     models = ["text_encoder", "unet", "vae_decoder"]
-    success = True
-    for name in models:
-        if not build_engine(name, args.onnx_dir, args.engine_dir, use_trtexec):
-            success = False
+    success = all(build_engine(name, args.onnx_dir, args.engine_dir) for name in models)
 
     if success:
         print("\nAll engines built successfully!")
-        print(f"Files in {args.engine_dir}/:")
         for f in sorted(os.listdir(args.engine_dir)):
             if f.endswith(".trt"):
                 size = os.path.getsize(os.path.join(args.engine_dir, f))

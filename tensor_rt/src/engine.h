@@ -28,10 +28,11 @@ class TrtLogger : public nvinfer1::ILogger {
 // Buffer info for a single engine I/O tensor
 struct BufferInfo {
     std::string name;
-    nvinfer1::Dims dims;
+    nvinfer1::Dims dims;          // actual runtime shape (set before infer)
     nvinfer1::DataType dtype;
-    size_t byte_size;
-    void* device_ptr = nullptr;  // GPU memory
+    size_t byte_size;             // allocated size (based on max shape)
+    void* device_ptr = nullptr;   // GPU memory
+    bool is_dynamic = false;      // true if engine shape has -1 dims
 };
 
 // Wraps a single TensorRT engine: load, allocate buffers, run inference
@@ -56,6 +57,9 @@ class TrtEngine {
     // Get buffer info for inputs/outputs
     const std::vector<BufferInfo>& inputs() const { return inputs_; }
     const std::vector<BufferInfo>& outputs() const { return outputs_; }
+
+    // Set the runtime shape for a dynamic input tensor
+    bool set_input_shape(const std::string& name, const nvinfer1::Dims& dims);
 
     // Copy data to an input buffer (host → device)
     bool set_input(const std::string& name, const void* host_data, size_t bytes);
