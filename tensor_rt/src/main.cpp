@@ -51,18 +51,25 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // Configure the three TensorRT engine paths and vocabulary.
     PipelineConfig config;
     config.text_encoder_engine = engine_dir + "/text_encoder.trt";
     config.unet_engine = engine_dir + "/unet.trt";
     config.vae_decoder_engine = engine_dir + "/vae_decoder.trt";
     config.vocab_path = vocab;
 
+    // Initialize: loads tokenizer vocab, scheduler alpha schedule, and
+    // all three TensorRT engines into GPU memory.
     Pipeline pipeline;
     if (!pipeline.init(config)) {
         std::cerr << "Failed to initialize pipeline" << std::endl;
         return 1;
     }
 
+    // Run the full text-to-image pipeline:
+    //   1. Tokenize prompt → CLIP text encoder → embeddings
+    //   2. Random noise → UNet denoising (4 LCM steps) → clean latents
+    //   3. Latents → VAE decoder → 512x512 RGB pixels
     auto pixels = pipeline.generate(prompt, seed, steps);
 
     if (pixels.empty()) {
@@ -70,7 +77,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Write PNG
+    // Write the raw RGB pixel data as a PNG file.
     int ok = stbi_write_png(output.c_str(), 512, 512, 3, pixels.data(),
                             512 * 3);
     if (ok) {

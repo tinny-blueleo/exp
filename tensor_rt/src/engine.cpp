@@ -2,7 +2,6 @@
 
 #include <fstream>
 #include <iostream>
-#include <numeric>
 
 void TrtLogger::log(Severity severity, const char* msg) noexcept {
     if (severity <= Severity::kWARNING) {
@@ -13,7 +12,8 @@ void TrtLogger::log(Severity severity, const char* msg) noexcept {
 TrtEngine::~TrtEngine() { unload(); }
 
 bool TrtEngine::load(const std::string& engine_path) {
-    // Read serialized engine file
+    // Read the entire .trt file into memory. These files contain the compiled
+    // network weights and execution plan — typically 100MB-1.6GB for SD models.
     std::ifstream file(engine_path, std::ios::binary | std::ios::ate);
     if (!file.is_open()) {
         std::cerr << "Failed to open engine: " << engine_path << std::endl;
@@ -29,40 +29,34 @@ bool TrtEngine::load(const std::string& engine_path) {
     }
     file.close();
 
-    // Create runtime and deserialize
+    // Deserialize: reconstruct the engine from its serialized form.
+    // This loads weights into GPU memory and prepares CUDA kernels.
     runtime_.reset(nvinfer1::createInferRuntime(logger_));
-    if (!runtime_) {
-        std::cerr << "Failed to create TensorRT runtime" << std::endl;
-        return false;
-    }
+    if (!runtime_) return false;
 
-    engine_.reset(
-        runtime_->deserializeCudaEngine(data.data(), data.size()));
+    engine_.reset(runtime_->deserializeCudaEngine(data.data(), data.size()));
     if (!engine_) {
         std::cerr << "Failed to deserialize engine: " << engine_path << std::endl;
         return false;
     }
 
+    // An execution context holds the runtime state for one inference call.
+    // Multiple contexts can share one engine for concurrent inference.
     context_.reset(engine_->createExecutionContext());
-    if (!context_) {
-        std::cerr << "Failed to create execution context" << std::endl;
-        return false;
-    }
+    if (!context_) return false;
 
-    // Create CUDA stream
     if (cudaStreamCreate(&stream_) != cudaSuccess) {
         std::cerr << "Failed to create CUDA stream" << std::endl;
         return false;
     }
 
-    // Discover I/O tensors and allocate buffers
     if (!allocate_buffers()) {
         std::cerr << "Failed to allocate buffers" << std::endl;
         return false;
     }
 
-    std::cout << "Loaded engine: " << engine_path << " (" << size / 1024 / 1024
-              << " MB)" << std::endl;
+    std::cout << "Loaded engine: " << engine_path
+              << " (" << size / 1024 / 1024 << " MB)" << std::endl;
     return true;
 }
 
@@ -81,13 +75,15 @@ bool TrtEngine::allocate_buffers() {
     int num_io = engine_->getNbIOTensors();
     int num_profiles = engine_->getNbOptimizationProfiles();
 
-    // Count inputs/outputs first so we can reserve and avoid reallocation
+    // Reserve vectors upfront so push_back won't reallocate and invalidate
+    // the pointers we store in buffer_map_.
     int num_inputs = 0, num_outputs = 0;
     for (int i = 0; i < num_io; i++) {
         const char* name = engine_->getIOTensorName(i);
-        auto mode = engine_->getTensorIOMode(name);
-        if (mode == nvinfer1::TensorIOMode::kINPUT) num_inputs++;
-        else num_outputs++;
+        if (engine_->getTensorIOMode(name) == nvinfer1::TensorIOMode::kINPUT)
+            num_inputs++;
+        else
+            num_outputs++;
     }
     inputs_.reserve(num_inputs);
     outputs_.reserve(num_outputs);
@@ -98,30 +94,31 @@ bool TrtEngine::allocate_buffers() {
         nvinfer1::DataType dtype = engine_->getTensorDataType(name);
         auto mode = engine_->getTensorIOMode(name);
 
-        // Check if any dimension is dynamic (-1)
+        // Dynamic-shape engines report -1 for variable dimensions.
+        // We allocate based on the max profile shape so the buffer is large
+        // enough for any valid input size.
         bool is_dynamic = false;
         for (int d = 0; d < dims.nbDims; d++) {
-            if (dims.d[d] == -1) {
-                is_dynamic = true;
-                break;
-            }
+            if (dims.d[d] == -1) { is_dynamic = true; break; }
         }
 
-        // For allocation, use the max profile shape for dynamic tensors
         nvinfer1::Dims alloc_dims = dims;
         if (is_dynamic && num_profiles > 0) {
             if (mode == nvinfer1::TensorIOMode::kINPUT) {
-                alloc_dims = engine_->getProfileShape(name, 0,
-                    nvinfer1::OptProfileSelector::kMAX);
+                alloc_dims = engine_->getProfileShape(
+                    name, 0, nvinfer1::OptProfileSelector::kMAX);
             } else {
-                // For dynamic outputs, use reasonable upper bounds
-                alloc_dims = dims;
+                // Output shapes depend on inputs and can't be queried from the
+                // profile directly. Use conservative upper bounds for our
+                // known model structure (SD 512x512).
                 for (int d = 0; d < alloc_dims.nbDims; d++) {
                     if (alloc_dims.d[d] == -1) {
-                        if (d == 0) alloc_dims.d[d] = 1;
-                        else if (d == 1 && alloc_dims.nbDims == 4) alloc_dims.d[d] = 4;
-                        else if (alloc_dims.nbDims == 4) alloc_dims.d[d] = 512;
-                        else alloc_dims.d[d] = 768;
+                        if (d == 0) alloc_dims.d[d] = 1;        // batch
+                        else if (d == 1 && alloc_dims.nbDims == 4)
+                            alloc_dims.d[d] = 4;                 // channels
+                        else if (alloc_dims.nbDims == 4)
+                            alloc_dims.d[d] = 512;               // spatial
+                        else alloc_dims.d[d] = 768;              // embedding
                     }
                 }
             }
@@ -134,33 +131,33 @@ bool TrtEngine::allocate_buffers() {
         info.dims = alloc_dims;
         info.dtype = dtype;
         info.byte_size = bytes;
-        info.is_dynamic = is_dynamic;
 
         if (cudaMalloc(&info.device_ptr, bytes) != cudaSuccess) {
-            std::cerr << "Failed to allocate GPU memory for " << name << " ("
-                      << bytes << " bytes)" << std::endl;
+            std::cerr << "Failed to allocate GPU memory for " << name
+                      << " (" << bytes << " bytes)" << std::endl;
             return false;
         }
         cudaMemset(info.device_ptr, 0, bytes);
 
+        // Tell TensorRT where this tensor lives in GPU memory.
         context_->setTensorAddress(name, info.device_ptr);
 
-        // For dynamic inputs, set the shape to the opt profile shape
-        if (is_dynamic && mode == nvinfer1::TensorIOMode::kINPUT && num_profiles > 0) {
-            nvinfer1::Dims opt_dims = engine_->getProfileShape(name, 0,
-                nvinfer1::OptProfileSelector::kOPT);
-            context_->setInputShape(name, opt_dims);
-            info.dims = opt_dims;
+        // Set an initial shape for dynamic inputs so the context is valid.
+        if (is_dynamic && mode == nvinfer1::TensorIOMode::kINPUT
+            && num_profiles > 0) {
+            nvinfer1::Dims opt = engine_->getProfileShape(
+                name, 0, nvinfer1::OptProfileSelector::kOPT);
+            context_->setInputShape(name, opt);
+            info.dims = opt;
         }
 
-        if (mode == nvinfer1::TensorIOMode::kINPUT) {
+        if (mode == nvinfer1::TensorIOMode::kINPUT)
             inputs_.push_back(info);
-        } else {
+        else
             outputs_.push_back(info);
-        }
     }
 
-    // Build buffer_map after all pushes (pointers now stable)
+    // Build name→pointer map after all pushes (vector is now stable).
     for (auto& buf : inputs_) buffer_map_[buf.name] = &buf;
     for (auto& buf : outputs_) buffer_map_[buf.name] = &buf;
 
@@ -169,16 +166,10 @@ bool TrtEngine::allocate_buffers() {
 
 void TrtEngine::free_buffers() {
     for (auto& buf : inputs_) {
-        if (buf.device_ptr) {
-            cudaFree(buf.device_ptr);
-            buf.device_ptr = nullptr;
-        }
+        if (buf.device_ptr) { cudaFree(buf.device_ptr); buf.device_ptr = nullptr; }
     }
     for (auto& buf : outputs_) {
-        if (buf.device_ptr) {
-            cudaFree(buf.device_ptr);
-            buf.device_ptr = nullptr;
-        }
+        if (buf.device_ptr) { cudaFree(buf.device_ptr); buf.device_ptr = nullptr; }
     }
     inputs_.clear();
     outputs_.clear();
@@ -240,20 +231,18 @@ bool TrtEngine::get_output(const std::string& name, void* host_data,
 size_t TrtEngine::dtype_size(nvinfer1::DataType dt) {
     switch (dt) {
         case nvinfer1::DataType::kFLOAT: return 4;
-        case nvinfer1::DataType::kHALF: return 2;
+        case nvinfer1::DataType::kHALF:  return 2;
         case nvinfer1::DataType::kINT32: return 4;
-        case nvinfer1::DataType::kINT8: return 1;
-        case nvinfer1::DataType::kBOOL: return 1;
+        case nvinfer1::DataType::kINT8:  return 1;
+        case nvinfer1::DataType::kBOOL:  return 1;
         case nvinfer1::DataType::kINT64: return 8;
-        case nvinfer1::DataType::kBF16: return 2;
+        case nvinfer1::DataType::kBF16:  return 2;
         default: return 4;
     }
 }
 
 size_t TrtEngine::volume(const nvinfer1::Dims& dims) {
     size_t vol = 1;
-    for (int i = 0; i < dims.nbDims; i++) {
-        vol *= dims.d[i];
-    }
+    for (int i = 0; i < dims.nbDims; i++) vol *= dims.d[i];
     return vol;
 }

@@ -9,38 +9,49 @@
 #include <set>
 #include <sstream>
 
-// Build the byte-to-unicode mapping used by CLIP
+// Build the byte-to-unicode mapping used by CLIP's tokenizer.
+//
+// The problem: BPE operates on strings, but we need to handle arbitrary bytes
+// (including control characters, null bytes, etc.). The solution is to map each
+// byte value (0-255) to a unique Unicode character:
+//
+//   - Printable bytes (33-126, 161-172, 174-255) map to themselves
+//     e.g., byte 65 ('A') → "A", byte 97 ('a') → "a"
+//
+//   - Non-printable bytes (0-32, 127-160, 173) map to codepoints 256+
+//     e.g., byte 0 → U+0100 (Ā), byte 32 (space) → U+0120 (Ġ)
+//
+// This ensures every byte has a visible, unique representation in the
+// vocabulary without collisions or ambiguity.
 static std::unordered_map<uint8_t, std::string> bytes_to_unicode() {
     std::unordered_map<uint8_t, std::string> result;
 
-    // Printable ASCII and Latin-1 supplement ranges that map to themselves
+    // Collect bytes that map to themselves (printable ranges).
     std::vector<int> bs;
-    for (int i = '!'; i <= '~'; i++) bs.push_back(i);
-    for (int i = 0xA1; i <= 0xAC; i++) bs.push_back(i);
-    for (int i = 0xAE; i <= 0xFF; i++) bs.push_back(i);
+    for (int i = '!'; i <= '~'; i++) bs.push_back(i);      // ASCII printable
+    for (int i = 0xA1; i <= 0xAC; i++) bs.push_back(i);    // Latin-1 supplement
+    for (int i = 0xAE; i <= 0xFF; i++) bs.push_back(i);    // Latin-1 supplement
 
     std::set<int> bs_set(bs.begin(), bs.end());
 
-    // Map those bytes to single-char UTF-8 strings
+    // Map printable bytes to their Unicode character (encoded as UTF-8).
     for (int b : bs) {
-        // These bytes map to themselves as Unicode codepoints
         std::string s;
         if (b < 0x80) {
             s = std::string(1, (char)b);
         } else {
-            // Encode as UTF-8
+            // 2-byte UTF-8: 110xxxxx 10xxxxxx
             s += (char)(0xC0 | (b >> 6));
             s += (char)(0x80 | (b & 0x3F));
         }
         result[(uint8_t)b] = s;
     }
 
-    // Remaining bytes (0-32, 127-160, etc.) get mapped to codepoints 256+
+    // Map remaining bytes to codepoints starting at 256.
     int n = 0;
     for (int b = 0; b < 256; b++) {
         if (bs_set.count(b) == 0) {
             int cp = 256 + n;
-            // Encode codepoint as UTF-8
             std::string s;
             if (cp < 0x80) {
                 s = std::string(1, (char)cp);
@@ -67,17 +78,17 @@ bool ClipTokenizer::load(const std::string& vocab_path) {
 
     std::string line;
 
-    // First line is a comment, skip it
+    // First line is a header comment, skip it.
     std::getline(file, line);
 
-    // Read BPE merges — CLIP uses only the first 48894 merges
-    // (matching OpenAI's: merges[1:49152-256-2+1])
+    // Read BPE merge rules. Each line is "token1 token2", meaning those two
+    // tokens should be merged (in priority order — earlier = merge first).
+    // CLIP uses exactly 48,894 merges (not the full 49,152 in the file).
     const int max_merges = 48894;
     int rank = 0;
     while (std::getline(file, line) && rank < max_merges) {
         if (line.empty()) continue;
 
-        // Lines are "token1 token2" merge pairs
         auto space = line.find(' ');
         if (space == std::string::npos) continue;
 
@@ -89,12 +100,17 @@ bool ClipTokenizer::load(const std::string& vocab_path) {
     }
     file.close();
 
-    // Build encoder: the vocab file implicitly defines token IDs
-    // First 256 entries are single byte tokens, then 256 byte+</w> tokens,
-    // then the merge results in order, then special tokens
+    // Build the vocabulary (token string → integer ID).
+    //
+    // The vocab is constructed in a specific order that determines token IDs:
+    //   IDs 0-255:     single-byte tokens (one per byte value)
+    //   IDs 256-511:   single-byte + "</w>" tokens (end-of-word variants)
+    //   IDs 512-49405: merged tokens (one per merge rule, in merge order)
+    //   ID 49406:      <|startoftext|>
+    //   ID 49407:      <|endoftext|>
     std::vector<std::string> vocab;
 
-    // Single byte tokens
+    // Single-byte tokens (IDs 0-255).
     for (int b = 0; b < 256; b++) {
         auto it = byte_encoder_.find((uint8_t)b);
         if (it != byte_encoder_.end()) {
@@ -102,7 +118,7 @@ bool ClipTokenizer::load(const std::string& vocab_path) {
         }
     }
 
-    // Byte + </w> tokens
+    // Byte + </w> tokens (IDs 256-511).
     for (int b = 0; b < 256; b++) {
         auto it = byte_encoder_.find((uint8_t)b);
         if (it != byte_encoder_.end()) {
@@ -110,8 +126,8 @@ bool ClipTokenizer::load(const std::string& vocab_path) {
         }
     }
 
-    // Merge results (each merge creates a new token)
-    // Re-read the file to get merge results in order, limited to max_merges
+    // Merged tokens (IDs 512+). Each merge rule creates a new token by
+    // concatenating the two tokens it merges.
     std::ifstream file2(vocab_path);
     std::getline(file2, line);  // skip header
 
@@ -127,7 +143,7 @@ bool ClipTokenizer::load(const std::string& vocab_path) {
     }
     file2.close();
 
-    // Special tokens
+    // Special tokens.
     vocab.push_back("<|startoftext|>");
     vocab.push_back("<|endoftext|>");
 
@@ -155,11 +171,23 @@ std::vector<std::string> ClipTokenizer::byte_encode(
     return result;
 }
 
+// Apply BPE merges to a single word.
+//
+// Starting from individual characters (byte-encoded), repeatedly find and
+// merge the highest-priority pair until no more merges apply.
+//
+// Example for "space":
+//   Initial:  ["s", "p", "a", "c", "e</w>"]
+//   Merge 1:  ["sp", "a", "c", "e</w>"]       (rank of "s p" is lowest)
+//   Merge 2:  ["sp", "a", "ce</w>"]            (rank of "c e</w>")
+//   Merge 3:  ["sp", "ace</w>"]                (rank of "a ce</w>")
+//   Merge 4:  ["space</w>"]                    (rank of "sp ace</w>")
+//   Done: no more pairs have merge rules.
 std::vector<std::string> ClipTokenizer::bpe(const std::string& token) const {
-    // Split token into individual characters (byte-encoded)
+    // Split into individual UTF-8 characters.
     std::vector<std::string> word;
     for (size_t i = 0; i < token.size();) {
-        // Handle UTF-8 multi-byte sequences
+        // Determine UTF-8 character length from first byte.
         int len = 1;
         unsigned char c = token[i];
         if ((c & 0xE0) == 0xC0) len = 2;
@@ -172,11 +200,14 @@ std::vector<std::string> ClipTokenizer::bpe(const std::string& token) const {
 
     if (word.empty()) return word;
 
-    // Add </w> to last token
+    // Mark the last character with </w> (end-of-word).
+    // This distinguishes "space" (end of word) from "space" (prefix of
+    // "spaceship"), which get different BPE tokens.
     word.back() += "</w>";
 
+    // Greedily merge pairs until no more merges apply.
     while (word.size() > 1) {
-        // Find the pair with lowest merge rank
+        // Find the pair with the lowest merge rank (highest priority).
         int best_rank = INT_MAX;
         int best_idx = -1;
 
@@ -189,15 +220,15 @@ std::vector<std::string> ClipTokenizer::bpe(const std::string& token) const {
             }
         }
 
-        if (best_idx < 0) break;  // No more merges
+        if (best_idx < 0) break;  // No mergeable pairs remain.
 
-        // Merge the best pair
+        // Merge the best pair into a single token.
         std::string merged = word[best_idx] + word[best_idx + 1];
         std::vector<std::string> new_word;
         for (size_t i = 0; i < word.size(); i++) {
             if ((int)i == best_idx) {
                 new_word.push_back(merged);
-                i++;  // skip next
+                i++;  // skip the second token of the merged pair
             } else {
                 new_word.push_back(word[i]);
             }
@@ -211,23 +242,27 @@ std::vector<std::string> ClipTokenizer::bpe(const std::string& token) const {
 std::vector<int32_t> ClipTokenizer::encode(const std::string& text,
                                             int max_length) const {
     std::vector<int32_t> tokens;
+
+    // Start with <|startoftext|> token (always the first token).
     tokens.push_back(sot_token_);
 
-    // Lowercase and basic cleanup
+    // Lowercase the input (CLIP was trained on lowercased text).
     std::string clean;
     for (char c : text) {
         clean += std::tolower((unsigned char)c);
     }
 
-    // Simple whitespace tokenization (CLIP uses a regex, but for basic prompts
-    // splitting on whitespace + punctuation works)
-    // Pattern: split on spaces, keep punctuation as separate tokens
+    // Split on whitespace, then byte-encode and BPE each word.
+    //
+    // Note: the real CLIP tokenizer uses a regex to split on word boundaries
+    // and punctuation. This simplified version splits on spaces only, which
+    // works fine for typical prompts like "Taj Mahal in space".
     std::string word;
     for (size_t i = 0; i < clean.size(); i++) {
         char c = clean[i];
         if (c == ' ' || c == '\t' || c == '\n') {
             if (!word.empty()) {
-                // Byte-encode and BPE the word
+                // Convert word bytes to Unicode representations, then run BPE.
                 std::string encoded;
                 for (unsigned char ch : word) {
                     auto it = byte_encoder_.find(ch);
@@ -249,7 +284,7 @@ std::vector<int32_t> ClipTokenizer::encode(const std::string& text,
         }
     }
 
-    // Process last word
+    // Process the last word (no trailing space).
     if (!word.empty()) {
         std::string encoded;
         for (unsigned char ch : word) {
@@ -267,9 +302,11 @@ std::vector<int32_t> ClipTokenizer::encode(const std::string& text,
         }
     }
 
+    // End with <|endoftext|> token.
     tokens.push_back(eot_token_);
 
-    // Pad or truncate to max_length
+    // CLIP always expects exactly 77 tokens. Truncate if too long,
+    // pad with <|endoftext|> if too short.
     if ((int)tokens.size() > max_length) {
         tokens.resize(max_length);
         tokens.back() = eot_token_;
