@@ -224,7 +224,7 @@ std::vector<float> Pipeline::denoise(const std::vector<float>& text_embeddings,
         }
 
         // Scheduler step: update latents in-place
-        scheduler_.step(noise_pred.data(), i, latents.data(), latent_size);
+        scheduler_.step(noise_pred.data(), i, latents.data(), latent_size, seed);
 
         double step_elapsed = now_ms() - step_t0;
         std::cout << "  Step " << i + 1 << "/" << num_steps << " (t=" << t

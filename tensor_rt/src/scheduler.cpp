@@ -3,14 +3,14 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
-#include <numeric>
+#include <random>
 
 void LcmScheduler::init(int num_train_timesteps, float beta_start,
                          float beta_end) {
     num_train_timesteps_ = num_train_timesteps;
 
-    // Linear beta schedule (scaled_linear in diffusers)
-    // betas = linspace(sqrt(beta_start), sqrt(beta_end), num_train_timesteps)^2
+    // Scaled linear beta schedule (matching diffusers)
+    // betas = linspace(sqrt(beta_start), sqrt(beta_end), N)^2
     std::vector<float> betas(num_train_timesteps);
     float sqrt_start = std::sqrt(beta_start);
     float sqrt_end = std::sqrt(beta_end);
@@ -20,8 +20,7 @@ void LcmScheduler::init(int num_train_timesteps, float beta_start,
         betas[i] = sqrt_beta * sqrt_beta;
     }
 
-    // alphas = 1 - betas
-    // alphas_cumprod = cumprod(alphas)
+    // alphas_cumprod = cumprod(1 - betas)
     alphas_cumprod_.resize(num_train_timesteps);
     float prod = 1.0f;
     for (int i = 0; i < num_train_timesteps; i++) {
@@ -35,30 +34,26 @@ void LcmScheduler::set_timesteps(int num_inference_steps,
     num_inference_steps_ = num_inference_steps;
     timesteps_.clear();
 
-    // LCM timestep schedule (matching diffusers LCMScheduler):
-    // 1. Create original_inference_steps evenly-spaced timesteps
-    int c = num_train_timesteps_ / original_inference_steps;
-    std::vector<int> lcm_origin_timesteps(original_inference_steps);
+    // Matches diffusers LCMScheduler.set_timesteps exactly:
+    // 1. Create original timestep schedule
+    int k = num_train_timesteps_ / original_inference_steps;
+    std::vector<int> lcm_origin(original_inference_steps);
     for (int i = 0; i < original_inference_steps; i++) {
-        lcm_origin_timesteps[i] = (i + 1) * c - 1;
+        lcm_origin[i] = (i + 1) * k - 1;
     }
+    // = [19, 39, 59, ..., 999]
 
-    // 2. Subsample num_inference_steps from the original schedule
-    int skipping_step = original_inference_steps / num_inference_steps;
+    // 2. Reverse
+    std::reverse(lcm_origin.begin(), lcm_origin.end());
+    // = [999, 979, 959, ..., 19]
 
-    // Select indices: start from end, step back by skipping_step
-    std::vector<int> selected_indices;
-    for (int i = original_inference_steps - 1; i >= 0; i -= skipping_step) {
-        selected_indices.push_back(i);
-    }
-    // Keep only num_inference_steps
-    if ((int)selected_indices.size() > num_inference_steps) {
-        selected_indices.resize(num_inference_steps);
-    }
-
-    // selected_indices is already in descending order (largest first)
-    for (int idx : selected_indices) {
-        timesteps_.push_back(lcm_origin_timesteps[idx]);
+    // 3. Select evenly spaced indices using linspace(0, N, num, endpoint=False)
+    //    then floor to int — matches np.linspace + np.floor
+    int n = original_inference_steps;
+    for (int i = 0; i < num_inference_steps; i++) {
+        float frac = (float)i * (float)n / (float)num_inference_steps;
+        int idx = (int)frac;  // floor
+        timesteps_.push_back(lcm_origin[idx]);
     }
 
     std::cout << "LCM timesteps (" << num_inference_steps << " steps): ";
@@ -66,33 +61,77 @@ void LcmScheduler::set_timesteps(int num_inference_steps,
     std::cout << std::endl;
 }
 
+void LcmScheduler::get_scalings(int timestep, float& c_skip,
+                                  float& c_out) const {
+    // Boundary condition scalings from LCM paper
+    // sigma_data = 0.5, timestep_scaling = 10.0
+    float scaled_t = (float)timestep * timestep_scaling_;
+    float sd2 = sigma_data_ * sigma_data_;
+    float st2 = scaled_t * scaled_t;
+
+    c_skip = sd2 / (st2 + sd2);
+    c_out = scaled_t / std::sqrt(st2 + sd2);
+}
+
 void LcmScheduler::step(const float* model_output, int timestep_idx,
-                         float* sample, int num_elements) {
+                         float* sample, int num_elements, uint32_t seed) {
     int t = timesteps_[timestep_idx];
 
-    // Get alpha values
+    // 1. Get alpha values
     float alpha_prod_t = alphas_cumprod_[t];
-    // For the previous timestep, use the next timestep in the list or final
-    float alpha_prod_t_prev = 1.0f;
-    if (timestep_idx + 1 < (int)timesteps_.size()) {
+
+    float alpha_prod_t_prev;
+    if (timestep_idx + 1 < num_inference_steps_) {
         int t_prev = timesteps_[timestep_idx + 1];
         alpha_prod_t_prev = alphas_cumprod_[t_prev];
+    } else {
+        // final_alpha_cumprod = 1.0 (set_alpha_to_one=True in config)
+        alpha_prod_t_prev = 1.0f;
     }
 
     float sqrt_alpha_t = std::sqrt(alpha_prod_t);
-    float sqrt_one_minus_alpha_t = std::sqrt(1.0f - alpha_prod_t);
+    float sqrt_beta_t = std::sqrt(1.0f - alpha_prod_t);
     float sqrt_alpha_t_prev = std::sqrt(alpha_prod_t_prev);
-    float sqrt_one_minus_alpha_t_prev = std::sqrt(1.0f - alpha_prod_t_prev);
+    float sqrt_beta_t_prev = std::sqrt(1.0f - alpha_prod_t_prev);
 
-    // LCM step (DDIM-style, deterministic):
-    // 1. Predict x0: x0 = (sample - sqrt(1-alpha_t) * noise_pred) / sqrt(alpha_t)
-    // 2. Compute prev: prev = sqrt(alpha_t_prev) * x0 + sqrt(1-alpha_t_prev) * noise_pred
+    // 2. Get boundary condition scalings
+    float c_skip, c_out;
+    get_scalings(t, c_skip, c_out);
+
+    // 3. Predict x0 (epsilon prediction type)
+    // predicted_original_sample = (sample - sqrt(1-alpha_t) * noise) / sqrt(alpha_t)
+
+    // 4. Apply boundary conditions: denoised = c_out * x0_pred + c_skip * sample
+
+    // 5. For non-final steps: prev = sqrt(alpha_prev) * denoised + sqrt(1-alpha_prev) * noise
+    //    For final step: prev = denoised
+    bool is_final = (timestep_idx == num_inference_steps_ - 1);
+
+    // Generate noise for non-final steps
+    std::vector<float> noise;
+    if (!is_final) {
+        noise.resize(num_elements);
+        // Use deterministic noise based on seed + step index
+        std::mt19937 gen(seed + timestep_idx + 1);
+        std::normal_distribution<float> dist(0.0f, 1.0f);
+        for (int i = 0; i < num_elements; i++) {
+            noise[i] = dist(gen);
+        }
+    }
+
     for (int i = 0; i < num_elements; i++) {
-        float x0_pred =
-            (sample[i] - sqrt_one_minus_alpha_t * model_output[i]) /
-            sqrt_alpha_t;
+        // Predict x0
+        float x0_pred = (sample[i] - sqrt_beta_t * model_output[i]) / sqrt_alpha_t;
 
-        sample[i] = sqrt_alpha_t_prev * x0_pred +
-                     sqrt_one_minus_alpha_t_prev * model_output[i];
+        // Apply LCM boundary conditions
+        float denoised = c_out * x0_pred + c_skip * sample[i];
+
+        if (is_final) {
+            sample[i] = denoised;
+        } else {
+            // Inject fresh noise (NOT model_output)
+            sample[i] = sqrt_alpha_t_prev * denoised +
+                         sqrt_beta_t_prev * noise[i];
+        }
     }
 }
