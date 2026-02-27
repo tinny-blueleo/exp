@@ -40,20 +40,15 @@ const image_size: usize = 512;
 
 pub const BackgroundRemoval = struct {
     allocator: std.mem.Allocator,
-    engine: Engine,
+    // Borrowed pointer — BackgroundRemoval does NOT own this engine.
+    // Ownership belongs to InferenceModels (see inference.zig).
+    engine: *Engine,
 
-    pub fn init(allocator: std.mem.Allocator, engine_path: [*:0]const u8) !BackgroundRemoval {
-        var self = BackgroundRemoval{
+    pub fn init(allocator: std.mem.Allocator, engine: *Engine) BackgroundRemoval {
+        return .{
             .allocator = allocator,
-            .engine = try Engine.init(),
+            .engine = engine,
         };
-        try self.engine.load(engine_path);
-        std.debug.print("Loaded U2-Net engine for background removal\n", .{});
-        return self;
-    }
-
-    pub fn deinit(self: *BackgroundRemoval) void {
-        self.engine.deinit();
     }
 
     /// Remove the background from a 512x512 RGB image.

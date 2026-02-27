@@ -1,7 +1,7 @@
 // Zig TensorRT Stable Diffusion — CLI entry point.
 //
 // Generates a 512x512 PNG image from a text prompt using LCM Dreamshaper v7.
-// Uses the same pre-built TensorRT engines as the C++ version.
+// Uses pre-built TensorRT engines loaded once via InferenceModels.
 //
 // Optionally removes the background using a U2-Net model (--transparent flag),
 // producing an RGBA PNG with the foreground preserved and background transparent.
@@ -11,9 +11,8 @@
 //   zig build run -- --prompt "a cat" --transparent -o cat_transparent.png
 
 const std = @import("std");
-const Pipeline = @import("pipeline.zig").Pipeline;
-const PipelineConfig = @import("pipeline.zig").PipelineConfig;
-const BackgroundRemoval = @import("background_removal.zig").BackgroundRemoval;
+const InferenceModels = @import("inference.zig").InferenceModels;
+const ModelConfig = @import("inference.zig").ModelConfig;
 
 // stb_image_write — declare the function directly since the header uses C++
 // default arguments (= NULL) that Zig's C translator can't parse.
@@ -35,7 +34,6 @@ pub fn main() !void {
     var engine_dir: []const u8 = "engines";
     var vocab: []const u8 = "data/bpe_simple_vocab_16e6.txt";
     var transparent: bool = false;
-    var u2net_engine: []const u8 = "engines/u2net.trt";
 
     var i: usize = 1;
     while (i < args.len) : (i += 1) {
@@ -60,9 +58,6 @@ pub fn main() !void {
             vocab = args[i];
         } else if (std.mem.eql(u8, arg, "--transparent")) {
             transparent = true;
-        } else if (std.mem.eql(u8, arg, "--u2net-engine") and i + 1 < args.len) {
-            i += 1;
-            u2net_engine = args[i];
         } else if (std.mem.eql(u8, arg, "-h") or std.mem.eql(u8, arg, "--help")) {
             std.debug.print(
                 \\Usage: sd-tensorrt-zig [options]
@@ -72,8 +67,7 @@ pub fn main() !void {
                 \\  -o FILE            Output PNG path (default: output.png)
                 \\  --engine-dir D     Engine directory (default: engines/)
                 \\  --vocab FILE       BPE vocab file (default: data/bpe_simple_vocab_16e6.txt)
-                \\  --transparent      Remove background (requires U2-Net engine)
-                \\  --u2net-engine F   U2-Net engine path (default: engines/u2net.trt)
+                \\  --transparent      Remove background (requires U2-Net engine in engine-dir)
                 \\  -h, --help         Show this help
                 \\
             , .{});
@@ -84,43 +78,20 @@ pub fn main() !void {
         }
     }
 
-    // Build engine paths
-    const text_enc_path = try std.fmt.allocPrintSentinel(allocator, "{s}/text_encoder.trt", .{engine_dir}, 0);
-    defer allocator.free(text_enc_path);
-    const unet_path = try std.fmt.allocPrintSentinel(allocator, "{s}/unet.trt", .{engine_dir}, 0);
-    defer allocator.free(unet_path);
-    const vae_path = try std.fmt.allocPrintSentinel(allocator, "{s}/vae_decoder.trt", .{engine_dir}, 0);
-    defer allocator.free(vae_path);
-
-    const config = PipelineConfig{
-        .text_encoder_engine = text_enc_path,
-        .unet_engine = unet_path,
-        .vae_decoder_engine = vae_path,
+    // Load all models once — this is the expensive step.
+    // In a server, you'd do this at startup and reuse `models` for every request.
+    var models = try InferenceModels.init(allocator, .{
+        .engine_dir = engine_dir,
         .vocab_path = vocab,
-    };
-
-    // Initialize: loads tokenizer, scheduler, and all TensorRT engines
-    var pipeline = try Pipeline.init(allocator, config);
-    defer pipeline.deinit();
-
-    // Run the full pipeline: text encoding → UNet denoising → VAE decode
-    const rgb_pixels = try pipeline.generate(prompt, seed, steps);
-    defer allocator.free(rgb_pixels);
+        .enable_transparency = transparent,
+    });
+    defer models.deinit();
 
     if (transparent) {
-        // Post-process: remove background using U2-Net to produce RGBA output.
-        // The U2-Net model detects the salient foreground object and generates
-        // an alpha mask. Background pixels become transparent (alpha=0).
-        const u2net_path = try std.fmt.allocPrintSentinel(allocator, "{s}", .{u2net_engine}, 0);
-        defer allocator.free(u2net_path);
-
-        var bg_removal = try BackgroundRemoval.init(allocator, u2net_path);
-        defer bg_removal.deinit();
-
-        const rgba_pixels = try bg_removal.removeBackground(rgb_pixels);
+        // Generate RGBA image with background removed
+        const rgba_pixels = try models.generateTransparent(prompt, seed, steps);
         defer allocator.free(rgba_pixels);
 
-        // Write RGBA PNG (4 channels, stride = 512 * 4 bytes per row)
         const ok = stbi_write_png(output.ptr, 512, 512, 4, rgba_pixels.ptr, 512 * 4, null);
         if (ok != 0) {
             std.debug.print("Saved (RGBA): {s}\n", .{output});
@@ -129,7 +100,10 @@ pub fn main() !void {
             return error.WriteFailed;
         }
     } else {
-        // Write standard RGB PNG (3 channels, stride = 512 * 3 bytes per row)
+        // Generate standard RGB image
+        const rgb_pixels = try models.generate(prompt, seed, steps);
+        defer allocator.free(rgb_pixels);
+
         const ok = stbi_write_png(output.ptr, 512, 512, 3, rgb_pixels.ptr, 512 * 3, null);
         if (ok != 0) {
             std.debug.print("Saved: {s}\n", .{output});

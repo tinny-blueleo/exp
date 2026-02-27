@@ -119,65 +119,48 @@ fn nowMs() f64 {
         @as(f64, @floatFromInt(ts.timestamp.nsec)) / 1_000_000.0;
 }
 
-pub const PipelineConfig = struct {
-    text_encoder_engine: [*:0]const u8,
-    unet_engine: [*:0]const u8,
-    vae_decoder_engine: [*:0]const u8,
-    vocab_path: []const u8,
-};
-
 pub const Pipeline = struct {
     allocator: std.mem.Allocator,
-    config: PipelineConfig,
 
-    tokenizer: ClipTokenizer,
-    scheduler: LcmScheduler,
+    // Borrowed pointers — Pipeline does NOT own these.
+    // Ownership belongs to InferenceModels (see inference.zig).
+    text_encoder: *Engine,
+    unet: *Engine,
+    vae_decoder: *Engine,
+    tokenizer: *ClipTokenizer,
+    scheduler: *LcmScheduler,
 
-    text_encoder: Engine,
-    unet: Engine,
-    vae_decoder: Engine,
+    // Engine paths needed for sequential mode reload
+    text_encoder_path: [*:0]const u8,
+    unet_path: [*:0]const u8,
+    vae_decoder_path: [*:0]const u8,
 
     sequential_mode: bool = false,
 
-    pub fn init(allocator: std.mem.Allocator, config: PipelineConfig) !Pipeline {
-        var self = Pipeline{
+    pub fn init(
+        allocator: std.mem.Allocator,
+        text_encoder: *Engine,
+        unet: *Engine,
+        vae_decoder: *Engine,
+        tokenizer: *ClipTokenizer,
+        scheduler: *LcmScheduler,
+        text_encoder_path: [*:0]const u8,
+        unet_path: [*:0]const u8,
+        vae_decoder_path: [*:0]const u8,
+        sequential_mode: bool,
+    ) Pipeline {
+        return .{
             .allocator = allocator,
-            .config = config,
-            .tokenizer = ClipTokenizer.init(allocator),
-            .scheduler = .{},
-            .text_encoder = try Engine.init(),
-            .unet = try Engine.init(),
-            .vae_decoder = try Engine.init(),
+            .text_encoder = text_encoder,
+            .unet = unet,
+            .vae_decoder = vae_decoder,
+            .tokenizer = tokenizer,
+            .scheduler = scheduler,
+            .text_encoder_path = text_encoder_path,
+            .unet_path = unet_path,
+            .vae_decoder_path = vae_decoder_path,
+            .sequential_mode = sequential_mode,
         };
-
-        try self.tokenizer.load(config.vocab_path);
-        try self.text_encoder.load(config.text_encoder_engine);
-        try self.unet.load(config.unet_engine);
-
-        self.vae_decoder.load(config.vae_decoder_engine) catch {
-    
-            std.debug.print("VRAM limited — switching to sequential engine loading\n", .{});
-            self.sequential_mode = true;
-            self.unet.unload();
-            self.text_encoder.unload();
-        };
-
-        self.scheduler.init();
-
-
-        if (self.sequential_mode) {
-            std.debug.print("Pipeline initialized (sequential mode)\n", .{});
-        } else {
-            std.debug.print("Pipeline initialized\n", .{});
-        }
-        return self;
-    }
-
-    pub fn deinit(self: *Pipeline) void {
-        self.vae_decoder.deinit();
-        self.unet.deinit();
-        self.text_encoder.deinit();
-        self.tokenizer.deinit();
     }
 
     pub fn generate(self: *Pipeline, prompt: []const u8, seed: u32, num_steps: i32) ![]u8 {
@@ -207,7 +190,7 @@ pub const Pipeline = struct {
 
 
         if (self.sequential_mode and !self.text_encoder.isLoaded())
-            try self.text_encoder.load(self.config.text_encoder_engine);
+            try self.text_encoder.load(self.text_encoder_path);
 
         // Tokenize: text → 77 integer token IDs
         var token_ids: [77]i32 = undefined;
@@ -261,7 +244,7 @@ pub const Pipeline = struct {
 
 
         if (self.sequential_mode and !self.unet.isLoaded())
-            try self.unet.load(self.config.unet_engine);
+            try self.unet.load(self.unet_path);
 
         self.scheduler.setTimesteps(num_steps);
 
@@ -382,7 +365,7 @@ pub const Pipeline = struct {
 
 
         if (self.sequential_mode and !self.vae_decoder.isLoaded())
-            try self.vae_decoder.load(self.config.vae_decoder_engine);
+            try self.vae_decoder.load(self.vae_decoder_path);
 
         const latent_size = latents.len;
 
