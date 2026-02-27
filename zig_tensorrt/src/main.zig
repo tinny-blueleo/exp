@@ -3,12 +3,17 @@
 // Generates a 512x512 PNG image from a text prompt using LCM Dreamshaper v7.
 // Uses the same pre-built TensorRT engines as the C++ version.
 //
+// Optionally removes the background using a U2-Net model (--transparent flag),
+// producing an RGBA PNG with the foreground preserved and background transparent.
+//
 // Usage:
 //   zig build run -- --prompt "Taj Mahal in space" --seed 42 --steps 4 -o output.png
+//   zig build run -- --prompt "a cat" --transparent -o cat_transparent.png
 
 const std = @import("std");
 const Pipeline = @import("pipeline.zig").Pipeline;
 const PipelineConfig = @import("pipeline.zig").PipelineConfig;
+const BackgroundRemoval = @import("background_removal.zig").BackgroundRemoval;
 
 // stb_image_write — declare the function directly since the header uses C++
 // default arguments (= NULL) that Zig's C translator can't parse.
@@ -29,6 +34,8 @@ pub fn main() !void {
     var output: [:0]const u8 = "output.png";
     var engine_dir: []const u8 = "engines";
     var vocab: []const u8 = "data/bpe_simple_vocab_16e6.txt";
+    var transparent: bool = false;
+    var u2net_engine: []const u8 = "engines/u2net.trt";
 
     var i: usize = 1;
     while (i < args.len) : (i += 1) {
@@ -51,16 +58,23 @@ pub fn main() !void {
         } else if (std.mem.eql(u8, arg, "--vocab") and i + 1 < args.len) {
             i += 1;
             vocab = args[i];
+        } else if (std.mem.eql(u8, arg, "--transparent")) {
+            transparent = true;
+        } else if (std.mem.eql(u8, arg, "--u2net-engine") and i + 1 < args.len) {
+            i += 1;
+            u2net_engine = args[i];
         } else if (std.mem.eql(u8, arg, "-h") or std.mem.eql(u8, arg, "--help")) {
             std.debug.print(
                 \\Usage: sd-tensorrt-zig [options]
-                \\  --prompt TEXT   Text prompt (default: "Taj Mahal in space")
-                \\  --seed N        Random seed (default: 42)
-                \\  --steps N       LCM denoising steps (default: 4)
-                \\  -o FILE         Output PNG path (default: output.png)
-                \\  --engine-dir D  Engine directory (default: engines/)
-                \\  --vocab FILE    BPE vocab file (default: data/bpe_simple_vocab_16e6.txt)
-                \\  -h, --help      Show this help
+                \\  --prompt TEXT       Text prompt (default: "Taj Mahal in space")
+                \\  --seed N           Random seed (default: 42)
+                \\  --steps N          LCM denoising steps (default: 4)
+                \\  -o FILE            Output PNG path (default: output.png)
+                \\  --engine-dir D     Engine directory (default: engines/)
+                \\  --vocab FILE       BPE vocab file (default: data/bpe_simple_vocab_16e6.txt)
+                \\  --transparent      Remove background (requires U2-Net engine)
+                \\  --u2net-engine F   U2-Net engine path (default: engines/u2net.trt)
+                \\  -h, --help         Show this help
                 \\
             , .{});
             return;
@@ -90,15 +104,38 @@ pub fn main() !void {
     defer pipeline.deinit();
 
     // Run the full pipeline: text encoding → UNet denoising → VAE decode
-    const pixels = try pipeline.generate(prompt, seed, steps);
-    defer allocator.free(pixels);
+    const rgb_pixels = try pipeline.generate(prompt, seed, steps);
+    defer allocator.free(rgb_pixels);
 
-    // Write the RGB pixel data as a PNG file
-    const ok = stbi_write_png(output.ptr, 512, 512, 3, pixels.ptr, 512 * 3, null);
-    if (ok != 0) {
-        std.debug.print("Saved: {s}\n", .{output});
+    if (transparent) {
+        // Post-process: remove background using U2-Net to produce RGBA output.
+        // The U2-Net model detects the salient foreground object and generates
+        // an alpha mask. Background pixels become transparent (alpha=0).
+        const u2net_path = try std.fmt.allocPrintSentinel(allocator, "{s}", .{u2net_engine}, 0);
+        defer allocator.free(u2net_path);
+
+        var bg_removal = try BackgroundRemoval.init(allocator, u2net_path);
+        defer bg_removal.deinit();
+
+        const rgba_pixels = try bg_removal.removeBackground(rgb_pixels);
+        defer allocator.free(rgba_pixels);
+
+        // Write RGBA PNG (4 channels, stride = 512 * 4 bytes per row)
+        const ok = stbi_write_png(output.ptr, 512, 512, 4, rgba_pixels.ptr, 512 * 4, null);
+        if (ok != 0) {
+            std.debug.print("Saved (RGBA): {s}\n", .{output});
+        } else {
+            std.debug.print("Failed to write: {s}\n", .{output});
+            return error.WriteFailed;
+        }
     } else {
-        std.debug.print("Failed to write: {s}\n", .{output});
-        return error.WriteFailed;
+        // Write standard RGB PNG (3 channels, stride = 512 * 3 bytes per row)
+        const ok = stbi_write_png(output.ptr, 512, 512, 3, rgb_pixels.ptr, 512 * 3, null);
+        if (ok != 0) {
+            std.debug.print("Saved: {s}\n", .{output});
+        } else {
+            std.debug.print("Failed to write: {s}\n", .{output});
+            return error.WriteFailed;
+        }
     }
 }
