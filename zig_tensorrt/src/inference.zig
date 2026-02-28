@@ -16,6 +16,13 @@
 //   1. Wrap calls in a std.Thread.Mutex (simple, limits to 1 request at a time)
 //   2. Create an engine pool with N copies of each engine for N-way concurrency
 //      (higher throughput, but multiplies GPU memory usage by N)
+//
+// TODO: Port TensorRT builder API to Zig (via C wrapper) so init() can convert
+// ONNX → TRT engines on first startup. This eliminates the Python dependency
+// for deployment. TRT engines are NOT portable across GPU architectures, so
+// the conversion must happen on the target server's GPU. The flow would be:
+//   init → check for cached .trt files → if missing, build from ONNX → load
+// Currently this step requires running the Python scripts in scripts/.
 
 const std = @import("std");
 const eng = @import("engine.zig");
