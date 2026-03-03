@@ -25,7 +25,7 @@
 // Currently this step requires running the Python scripts in scripts/.
 
 const std = @import("std");
-const eng = @import("engine.zig");
+const eng = @import("../engine.zig");
 const Pipeline = @import("pipeline.zig").Pipeline;
 const BackgroundRemoval = @import("background_removal.zig").BackgroundRemoval;
 const ClipTokenizer = @import("tokenizer.zig").ClipTokenizer;

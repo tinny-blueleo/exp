@@ -52,7 +52,7 @@
 // └─────────────────────────────────────────────────────────────────────────┘
 
 const std = @import("std");
-const eng = @import("engine.zig");
+const eng = @import("../engine.zig");
 const LcmScheduler = @import("scheduler.zig").LcmScheduler;
 const ClipTokenizer = @import("tokenizer.zig").ClipTokenizer;
 

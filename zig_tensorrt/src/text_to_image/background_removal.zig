@@ -23,7 +23,7 @@
 // negligible compared to the ~300ms diffusion pipeline.
 
 const std = @import("std");
-const Engine = @import("engine.zig").Engine;
+const Engine = @import("../engine.zig").Engine;
 
 /// ImageNet normalization constants.
 /// These are the mean and standard deviation of the ImageNet training set.

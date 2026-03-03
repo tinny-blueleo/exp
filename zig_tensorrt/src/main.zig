@@ -1,7 +1,7 @@
 // Zig TensorRT Stable Diffusion — CLI entry point.
 //
 // Generates a 512x512 PNG image from a text prompt using LCM Dreamshaper v7.
-// Uses pre-built TensorRT engines loaded once via InferenceModels.
+// Uses the sd_tensorrt library for all inference.
 //
 // Optionally removes the background using a U2-Net model (--transparent flag),
 // producing an RGBA PNG with the foreground preserved and background transparent.
@@ -11,8 +11,7 @@
 //   zig build run -- --prompt "a cat" --transparent -o cat_transparent.png
 
 const std = @import("std");
-const InferenceModels = @import("inference.zig").InferenceModels;
-const ModelConfig = @import("inference.zig").ModelConfig;
+const sd = @import("sd_tensorrt");
 
 // stb_image_write — declare the function directly since the header uses C++
 // default arguments (= NULL) that Zig's C translator can't parse.
@@ -80,36 +79,34 @@ pub fn main() !void {
 
     // Load all models once — this is the expensive step.
     // In a server, you'd do this at startup and reuse `models` for every request.
-    var models = try InferenceModels.init(allocator, .{
+    var models = try sd.TextToImageModels.init(allocator, .{
         .engine_dir = engine_dir,
         .vocab_path = vocab,
         .enable_transparency = transparent,
     });
     defer models.deinit();
 
-    if (transparent) {
-        // Generate RGBA image with background removed
-        const rgba_pixels = try models.generateTransparent(prompt, seed, steps);
-        defer allocator.free(rgba_pixels);
+    // Generate image using the library API
+    const pixels = try sd.generateImageForPrompt(&models, .{
+        .prompt = prompt,
+        .seed = seed,
+        .steps = steps,
+        .transparent = transparent,
+    });
+    defer allocator.free(pixels);
 
-        const ok = stbi_write_png(output.ptr, 512, 512, 4, rgba_pixels.ptr, 512 * 4, null);
-        if (ok != 0) {
+    // Write PNG — comp and stride depend on whether we have RGB or RGBA
+    const comp: c_int = if (transparent) 4 else 3;
+    const stride: c_int = 512 * comp;
+    const ok = stbi_write_png(output.ptr, 512, 512, comp, pixels.ptr, stride, null);
+    if (ok != 0) {
+        if (transparent) {
             std.debug.print("Saved (RGBA): {s}\n", .{output});
         } else {
-            std.debug.print("Failed to write: {s}\n", .{output});
-            return error.WriteFailed;
+            std.debug.print("Saved: {s}\n", .{output});
         }
     } else {
-        // Generate standard RGB image
-        const rgb_pixels = try models.generate(prompt, seed, steps);
-        defer allocator.free(rgb_pixels);
-
-        const ok = stbi_write_png(output.ptr, 512, 512, 3, rgb_pixels.ptr, 512 * 3, null);
-        if (ok != 0) {
-            std.debug.print("Saved: {s}\n", .{output});
-        } else {
-            std.debug.print("Failed to write: {s}\n", .{output});
-            return error.WriteFailed;
-        }
+        std.debug.print("Failed to write: {s}\n", .{output});
+        return error.WriteFailed;
     }
 }
